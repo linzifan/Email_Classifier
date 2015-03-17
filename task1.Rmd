@@ -1,0 +1,110 @@
+---
+title: "Task 1: Reading Emails"
+author: "Zifan Lin"
+date: "March 17, 2015"
+output: html_document
+---
+
+At the beginning, we need to read all emails, convert the text for each email message into an `R` object which contains
+
+- `$header`, a named character vector
+- `$body`, a vector with each element representing a line
+- `$attachment`, a list of one or more attachments. Each attachment is also a list with `$header` and `$body`
+
+
+Some potentially useful functions include: `list.files()`, `file.info()`, `readLines()`, `strsplit()`, `substring()`, `nchar()`, `read.dcf()`, `textConnection()`, `grep()`, `grepl()`, `gsub()`, `paste()`, `cumsum()`.
+
+### The Anatomy of an Email message
+
+An e-mail message consists of two parts, the header and the body. The body of the e-mail message is separated from the header by a single blank line. When an attachment is added to an e-mail message, the attachment is included in the body of the message. Even with attachments, e-mail messages are still only text messages.
+
+- **Header**
+
+The header contains information about the message such as the sender's address, the recipient's address, and the date of transmission. This information is relayed in a special format that consists of KEY:VALUE pairs. 
+
+Example:
+```
+From rssfeeds@jmason.org  Thu Sep 26 16:43:15 2002
+Return-Path: <rssfeeds@example.com>
+Delivered-To: yyyy@localhost.example.com
+Received: from localhost (jalapeno [127.0.0.1])
+  by jmason.org (Postfix) with ESMTP id E543516F69
+	for <jm@localhost>; Thu, 26 Sep 2002 16:42:08 +0100 (IST)
+Received: from jalapeno [127.0.0.1]
+	by localhost with IMAP (fetchmail-5.9.0)
+	for jm@localhost (single-drop); Thu, 26 Sep 2002 16:42:08 +0100 (IST)
+Received: from dogma.slashnull.org (localhost [127.0.0.1]) by
+    dogma.slashnull.org (8.11.6/8.11.6) with ESMTP id g8QFRgg24226 for
+    <jm@jmason.org>; Thu, 26 Sep 2002 16:27:42 +0100
+Message-Id: <200209261527.g8QFRgg24226@dogma.slashnull.org>
+To: yyyy@example.com
+From: "hyatt@mozilla" <rssfeeds@example.com>
+Subject: Priceless
+Date: Thu, 26 Sep 2002 15:27:41 -0000
+Content-Type: text/plain; encoding=utf-8
+X-Spam-Status: No, hits=0.0 required=5.0
+	tests=AWL
+	version=2.50-cvs
+X-Spam-Level: 
+```
+
+Some of these keys are mandatory such as *Date*, *From*, and *To* (or *In-Reply-To*, or *Bcc*). Other keys are optional but widely used, such as *Subject*, *Cc*, *Received*, and *Message-ID*. Many keys are ignored by the mail system, but the entire header is relayed on to the recipient's server whether or not it is recognized. For example, keys starting with "X-" are for personal application or institution use and are ignored by other applications. The **Received** header lines are important because they allow the message to be tracked. As a message makes its way to the intended recipient, servers add additional Received lines to the header. A value may be continued on a second line of the header, in which case the line will be indented and begin with a tab character or blank spaces.
+
+- **Body**
+
+The body of the email is all the text after the first blank line following the header and up to any attachments. If the message has no attachments, then the body is everything excluding the header. If the message has attachements, we need to fin where they begin to find the body.
+
+- **Attachments**
+
+An Internet standard called MIME, Mulfipurpose Internet Mail Extensions, specifies how messages may be formatted and how to separate the attachments from the message. Information about the MIME encoding is provided through header fields.
+
+Below is an example of a content-type where the top-level is multipart, which indicates there will be several documents in the body of the message. The boundary parameter provides a special character string for delimiting the start and end of the message part.
+```
+Content-Type: multipart/signed; micalg=pgp-sha1;
+    protocol="application/pgp-signature";
+    boundary="wLAMOaPNJ0fu1fTG"
+
+
+--wLAMOaPNJ0fu1fTG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Aug 28, 2002 at 12:14:24AM +0100, Justin Mason wrote:
+> actually, I think procmail supports this directly. use DROPPRIVS=3Dyes
+> at the top of the /etc/procmailrc.
+
+Hey, look at that!
+
+       DROPPRIVS   If  set  to  `yes'  procmail  will drop all privileges
+		   it might have had (suid or sgid).  This is only
+		   useful if you want to guarantee that the bottom half
+		   of  the /etc/procmailrc file is executed on behalf
+		   of the recipient.
+
+Of course, removing setuid/gid bits on programs that don't need it is
+always a good idea.  A general rule of system administration: don't give
+out permissions unless you absolutely need to.   ;)
+
+--=20
+Randomly Generated Tagline:
+"The cardinal rule at our school is simple. No shooting at teachers. If
+ you have to shoot a gun, shoot it at a student or an administrator."
+                 - "Word Smart II", from Princeton Review Pub.
+
+--wLAMOaPNJ0fu1fTG
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.0.6 (GNU/Linux)
+Comment: For info see http://www.gnupg.org
+
+iD8DBQE9bCkWAuOQUeWAs2MRAr+iAJ9cVLx61vWsC5KFDLYv9/T7FaZmxACgzUpC
+f235rrVr6cI8LvPC+IeIss0=
+=BsCM
+-----END PGP SIGNATURE-----
+
+--wLAMOaPNJ0fu1fTG--
+
+```
