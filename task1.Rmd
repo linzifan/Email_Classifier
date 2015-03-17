@@ -108,3 +108,48 @@ f235rrVr6cI8LvPC+IeIss0=
 --wLAMOaPNJ0fu1fTG--
 
 ```
+
+## Implement
+- `splitHeader`: seperates the content into the header and abody, and also a starting "From ...." line
+```{r, eval=F}
+splitHeader <- function(txt){
+  # body is all the text after the first blank line following header and up to any attachment
+  isblank <- txt == ""
+  ind <- which(isblank)[1] # index number of the first blank line
+  # check whether there is a "From Line" at the beginning
+  if(grepl("^From ", txt[1])) {
+    fromLine <- txt[1]
+    start <- 2
+  } else {
+    fromLine <- ""
+    start <- 1
+  }
+  list(header = txt[start:(ind - 1)],
+       body = txt[-(1:ind)],
+       fromLine = fromLine)
+}
+
+# splitHeader(txt)
+```
+
+- `makeHeader`: processes the lines in the header into KEY:VALUE pairs, return a named character vector
+```{r, eval=FALSE}
+makeHeader <- function(txt, asVector = TRUE){
+  con <- textConnection(txt)
+  on.exit(close(con))    
+  h <- read.dcf(con, all = TRUE)  # a data frame with one row
+  # turn it into a character vector
+  if (asVector){
+    structure(unlist(h),
+              names = rep(names(h), sapply(h, function(x)
+                                                if(is.list(x))
+                                                   length(x[[1]])
+                                                else
+                                                    1L)))
+  } else {h}
+}
+
+# makeHeader(splitHeader(txt)$header)
+```
+
+

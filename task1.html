@@ -154,6 +154,49 @@ f235rrVr6cI8LvPC+IeIss0=
 --wLAMOaPNJ0fu1fTG--
 </code></pre>
 </div>
+<div id="implement" class="section level2">
+<h2>Implement</h2>
+<ul>
+<li><code>splitHeader</code>: seperates the content into the header and abody, and also a starting “From ….” line</li>
+</ul>
+<pre class="r"><code>splitHeader &lt;- function(txt){
+  # body is all the text after the first blank line following header and up to any attachment
+  isblank &lt;- txt == &quot;&quot;
+  ind &lt;- which(isblank)[1] # index number of the first blank line
+  # check whether there is a &quot;From Line&quot; at the beginning
+  if(grepl(&quot;^From &quot;, txt[1])) {
+    fromLine &lt;- txt[1]
+    start &lt;- 2
+  } else {
+    fromLine &lt;- &quot;&quot;
+    start &lt;- 1
+  }
+  list(header = txt[start:(ind - 1)],
+       body = txt[-(1:ind)],
+       fromLine = fromLine)
+}
+
+# splitHeader(txt)</code></pre>
+<ul>
+<li><code>makeHeader</code>: processes the lines in the header into KEY:VALUE pairs, return a named character vector</li>
+</ul>
+<pre class="r"><code>makeHeader &lt;- function(txt, asVector = TRUE){
+  con &lt;- textConnection(txt)
+  on.exit(close(con))    
+  h &lt;- read.dcf(con, all = TRUE)  # a data frame with one row
+  # turn it into a character vector
+  if (asVector){
+    structure(unlist(h),
+              names = rep(names(h), sapply(h, function(x)
+                                                if(is.list(x))
+                                                   length(x[[1]])
+                                                else
+                                                    1L)))
+  } else {h}
+}
+
+# makeHeader(splitHeader(txt)$header)</code></pre>
+</div>
 
 
 </div>
