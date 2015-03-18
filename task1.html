@@ -196,6 +196,93 @@ f235rrVr6cI8LvPC+IeIss0=
 }
 
 # makeHeader(splitHeader(txt)$header)</code></pre>
+<ul>
+<li><code>getContentType</code>: extracts the Content-Type field</li>
+</ul>
+<pre class="r"><code>getContentType &lt;- function(header){
+  i &lt;- match(&quot;content-type&quot;, tolower(names(header)))
+  if (is.na(i)){
+    return(character())
+  } else return(header[[i]])
+}
+
+# getContentType(header)</code></pre>
+<ul>
+<li><code>getBoundaryMarker</code></li>
+</ul>
+<pre class="r"><code>getBoundaryMarker &lt;- function(ContentType){
+  rx &lt;- &quot;(boundary|BOUNDARY)=&quot;
+  els &lt;- strsplit(ContentType, &quot;;[[:space:]]*&quot;)[[1]]
+  val &lt;- grep(rx, els, value = TRUE)
+  gsub(&quot;(^[\&quot;']|[\&quot;']$)&quot;, &quot;&quot;, gsub(rx, &quot;&quot;,  val))
+}
+
+# getBoundaryMarker(ContentType)</code></pre>
+<ul>
+<li><code>splitBody</code>: split body into body text and attachments (if any)</li>
+</ul>
+<pre class="r"><code>splitBody &lt;- function(body, header){
+  ct &lt;- getContentType(header)
+  boundary &lt;- getBoundaryMarker(ct)
+  
+  if (length(ct) == 0 || !grepl(&quot;boundary&quot;, tolower(ct)))
+    return(list(body = body))
+ 
+  isStart &lt;- (body %in% c(sprintf(&quot;--%s&quot;, boundary), sprintf(&quot;--%s--&quot;, boundary)))
+  
+  if(!any(isStart)) {
+    i &lt;- agrep(paste0(&quot;--&quot;, boundary), body)
+    if(length(i))
+      isStart[i] &lt;- TRUE
+    else
+      return(list(body = body))
+  }
+  
+  textbody &lt;- character()
+  endMarker &lt;- which(body == sprintf(&quot;--%s--&quot;, boundary))
+  
+  pieces &lt;- split(body, cumsum(isStart))
+  if(!isStart[1]) {
+    textbody &lt;-  pieces[[1]]
+    pieces &lt;- pieces[-1]
+  }
+  
+  if(length(endMarker)) {
+    textbody &lt;- c(textbody, pieces[[length(pieces)]][-1])
+    pieces &lt;- pieces[ - length(pieces) ]
+  }
+  
+  atts &lt;- lapply(pieces, makeAttachment, boundary)  
+  return(list(body = textbody, attachments = atts))
+}</code></pre>
+<ul>
+<li><code>makeAttachment</code>: removes boundary marker, then process the content into the attachment header and body</li>
+</ul>
+<pre class="r"><code>makeAttachment &lt;- function(pieces, boundary){
+  if(paste0(&quot;--&quot;, boundary) == pieces[1] || length(agrep(paste0(&quot;--&quot;, boundary), pieces[1])))
+    pieces = pieces[-1]
+  i &lt;- which(pieces != &quot;&quot;)
+  if(length(i) == 0 || i[1] &gt; 1) 
+    return(list(header = character(), body = pieces))
+  
+  parts &lt;- splitHeader(pieces)
+  list(header = makeHeader(parts$header),
+       body = parts$body)
+}</code></pre>
+<ul>
+<li><code>readMessage</code>: combined function to read a single message</li>
+</ul>
+<pre class="r"><code>readMessage &lt;- function(filename){
+  txt &lt;- readLines(filename, warn = FALSE)
+  parts &lt;- splitHeader(txt)
+  header &lt;- makeHeader(parts$header)
+  result &lt;- splitBody(parts$body, header)
+  result$header &lt;- header
+  result
+}
+
+# readMessage(&quot;2096.8aecfec50aa2ec00803e8200e0d91399&quot;)
+# readMessage(&quot;01336.82adb611b4bea7ae97c57911d3152cee&quot;)</code></pre>
 </div>
 
 

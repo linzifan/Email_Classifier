@@ -153,3 +153,97 @@ makeHeader <- function(txt, asVector = TRUE){
 ```
 
 
+- `getContentType`: extracts the Content-Type field 
+```{r, eval=FALSE}
+getContentType <- function(header){
+  i <- match("content-type", tolower(names(header)))
+  if (is.na(i)){
+    return(character())
+  } else return(header[[i]])
+}
+
+# getContentType(header)
+```
+
+
+- `getBoundaryMarker`
+```{r, eval=FALSE}
+getBoundaryMarker <- function(ContentType){
+  rx <- "(boundary|BOUNDARY)="
+  els <- strsplit(ContentType, ";[[:space:]]*")[[1]]
+  val <- grep(rx, els, value = TRUE)
+  gsub("(^[\"']|[\"']$)", "", gsub(rx, "",  val))
+}
+
+# getBoundaryMarker(ContentType)
+```
+
+- `splitBody`: split body into body text and attachments (if any)
+```{r, eval=FALSE}
+splitBody <- function(body, header){
+  ct <- getContentType(header)
+  boundary <- getBoundaryMarker(ct)
+  
+  if (length(ct) == 0 || !grepl("boundary", tolower(ct)))
+    return(list(body = body))
+ 
+  isStart <- (body %in% c(sprintf("--%s", boundary), sprintf("--%s--", boundary)))
+  
+  if(!any(isStart)) {
+    i <- agrep(paste0("--", boundary), body)
+    if(length(i))
+      isStart[i] <- TRUE
+    else
+      return(list(body = body))
+  }
+  
+  textbody <- character()
+  endMarker <- which(body == sprintf("--%s--", boundary))
+  
+  pieces <- split(body, cumsum(isStart))
+  if(!isStart[1]) {
+    textbody <-  pieces[[1]]
+    pieces <- pieces[-1]
+  }
+  
+  if(length(endMarker)) {
+    textbody <- c(textbody, pieces[[length(pieces)]][-1])
+    pieces <- pieces[ - length(pieces) ]
+  }
+  
+  atts <- lapply(pieces, makeAttachment, boundary)  
+  return(list(body = textbody, attachments = atts))
+}
+
+```
+
+- `makeAttachment`: removes boundary marker, then process the content into the attachment header and body
+```{r, eval=FALSE}
+makeAttachment <- function(pieces, boundary){
+  if(paste0("--", boundary) == pieces[1] || length(agrep(paste0("--", boundary), pieces[1])))
+    pieces = pieces[-1]
+  i <- which(pieces != "")
+  if(length(i) == 0 || i[1] > 1) 
+    return(list(header = character(), body = pieces))
+  
+  parts <- splitHeader(pieces)
+  list(header = makeHeader(parts$header),
+       body = parts$body)
+}
+
+```
+
+- `readMessage`: combined function to read a single message
+```{r, eval=FALSE}
+readMessage <- function(filename){
+  txt <- readLines(filename, warn = FALSE)
+  parts <- splitHeader(txt)
+  header <- makeHeader(parts$header)
+  result <- splitBody(parts$body, header)
+  result$header <- header
+  result
+}
+
+# readMessage("2096.8aecfec50aa2ec00803e8200e0d91399")
+# readMessage("01336.82adb611b4bea7ae97c57911d3152cee")
+```

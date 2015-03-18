@@ -10,8 +10,9 @@ class(trainMessages[[15]]$attachment$`1`)
 
 # Explore step by step
 setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/easy_ham")
-# example 2096.8aecfec50aa2ec00803e8200e0d91399.txt
-filename <- "2096.8aecfec50aa2ec00803e8200e0d91399"
+
+filename <- "2096.8aecfec50aa2ec00803e8200e0d91399" # without attachment
+filename <- "01336.82adb611b4bea7ae97c57911d3152cee" # with attachment
 txt <- readLines(filename, warn = FALSE)
 
 splitHeader <- function(txt){
@@ -52,3 +53,90 @@ makeHeader <- function(txt, asVector = TRUE){
 
 # makeHeader(splitHeader(txt)$header)
 
+
+
+getContentType <- function(header){
+  i <- match("content-type", tolower(names(header)))
+  if (is.na(i)){
+    return(character())
+  } else return(header[[i]])
+}
+
+# ContentType <- getContentType(header)
+
+
+
+getBoundaryMarker <- function(ContentType){
+  rx <- "(boundary|BOUNDARY)="
+  els <- strsplit(ContentType, ";[[:space:]]*")[[1]]
+  val <- grep(rx, els, value = TRUE)
+  gsub("(^[\"']|[\"']$)", "", gsub(rx, "",  val))
+}
+
+# getBoundaryMarker(ContentType)
+
+
+splitBody <- function(body, header){
+  ct <- getContentType(header)
+  boundary <- getBoundaryMarker(ct)
+  
+  if (length(ct) == 0 || !grepl("boundary", tolower(ct)))
+    return(list(body = body))
+ 
+  isStart <- (body %in% c(sprintf("--%s", boundary), sprintf("--%s--", boundary)))
+  
+  if(!any(isStart)) {
+    i <- agrep(paste0("--", boundary), body)
+    if(length(i))
+      isStart[i] <- TRUE
+    else
+      return(list(body = body))
+  }
+  
+  textbody <- character()
+  endMarker <- which(body == sprintf("--%s--", boundary))
+  
+  pieces <- split(body, cumsum(isStart))
+  if(!isStart[1]) {
+    textbody <-  pieces[[1]]
+    pieces <- pieces[-1]
+  }
+  
+  if(length(endMarker)) {
+    textbody <- c(textbody, pieces[[length(pieces)]][-1])
+    pieces <- pieces[ - length(pieces) ]
+  }
+  
+  atts <- lapply(pieces, makeAttachment, boundary)  
+  return(list(body = textbody, attachments = atts))
+}
+
+# body <- splitHeader(txt)$body
+# header <- makeHeader(splitHeader(txt)$header)
+# splitBody(body, header)
+
+
+makeAttachment <- function(pieces, boundary){
+  if(paste0("--", boundary) == pieces[1] || length(agrep(paste0("--", boundary), pieces[1])))
+    pieces = pieces[-1]
+  i <- which(pieces != "")
+  if(length(i) == 0 || i[1] > 1) 
+    return(list(header = character(), body = pieces))
+  
+  parts <- splitHeader(pieces)
+  list(header = makeHeader(parts$header),
+       body = parts$body)
+}
+
+
+readMessage <- function(filename){
+  txt <- readLines(filename, warn = FALSE)
+  parts <- splitHeader(txt)
+  header <- makeHeader(parts$header)
+  result <- splitBody(parts$body, header)
+  result$header <- header
+  result
+}
+
+message1 <- readMessage("2096.8aecfec50aa2ec00803e8200e0d91399")
+message2 <- readMessage("01336.82adb611b4bea7ae97c57911d3152cee")
