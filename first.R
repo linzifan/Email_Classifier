@@ -150,7 +150,7 @@ train_easy_ham<- vector("list", length(filenames))
 for (i in 1:length(filenames)){
   train_easy_ham[i] <- list(readMessage(filenames[i]))
 }
-names(train_easy_ham) <- filenames
+names(train_easy_ham) <- paste0("ham/", filenames)
 
 setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/easy_ham_2")
 filenames <- list.files(getwd())
@@ -158,7 +158,7 @@ train_easy_ham_2<- vector("list", length(filenames))
 for (i in 1:length(filenames)){
   train_easy_ham_2[i] <- list(readMessage(filenames[i]))
 }
-names(train_easy_ham_2) <- filenames
+names(train_easy_ham_2) <- paste0("ham/", filenames)
 
 setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/hard_ham")
 filenames <- list.files(getwd())
@@ -166,7 +166,7 @@ train_hard_ham<- vector("list", length(filenames))
 for (i in 1:length(filenames)){
   train_hard_ham[i] <- list(readMessage(filenames[i]))
 }
-names(train_hard_ham) <- filenames
+names(train_hard_ham) <- paste0("ham/", filenames)
 
 setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/spam")
 filenames <- list.files(getwd())
@@ -174,7 +174,7 @@ train_spam<- vector("list", length(filenames))
 for (i in 1:length(filenames)){
   train_spam[i] <- list(readMessage(filenames[i]))
 }
-names(train_spam) <- filenames
+names(train_spam) <- paste0("spam/", filenames)
 
 setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/spam_2")
 filenames <- list.files(getwd())
@@ -182,6 +182,6 @@ train_spam_2<- vector("list", length(filenames))
 for (i in 1:length(filenames)){
   train_spam_2[i] <- list(readMessage(filenames[i]))
 }
-names(train_spam_2) <- filenames
+names(train_spam_2) <- paste0("spam/", filenames)
 
 training <- c(train_easy_ham, train_easy_ham_2, train_hard_ham, train_spam, train_spam_2)
