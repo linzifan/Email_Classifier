@@ -5,245 +5,40 @@ date: "March 19, 2015"
 output: html_document
 ---
 
-At the beginning, we need to read all emails, convert the text for each email message into an `R` object which contains
+In this part, we will create variables that measure different characteristics of each of the email message in our training data. We will use these variables to predict if a message is HAM or SPAM in next task.
 
-- `$header`, a named character vector
-- `$body`, a vector with each element representing a line
-- `$attachment`, a list of one or more attachments. Each attachment is also a list with `$header` and `$body`
+Some potentially useful functions include: `grep()`, `grepl()`, `gsub()`, `gregexpr() `, `regexec()`, `regmathes()`, `nchar()`, `strsplit()`, `table()`, `plot()`, `smoothScatter()`, `hexbin()`.
 
-
-Some potentially useful functions include: `list.files()`, `file.info()`, `readLines()`, `strsplit()`, `substring()`, `nchar()`, `read.dcf()`, `textConnection()`, `grep()`, `grepl()`, `gsub()`, `paste()`, `cumsum()`.
-
-### The Anatomy of an Email message
-
-An e-mail message consists of two parts, the header and the body. The body of the e-mail message is separated from the header by a single blank line. When an attachment is added to an e-mail message, the attachment is included in the body of the message. Even with attachments, e-mail messages are still only text messages.
-
-- **Header**
-
-The header contains information about the message such as the sender's address, the recipient's address, and the date of transmission. This information is relayed in a special format that consists of KEY:VALUE pairs. 
-
-Example:
-```
-From rssfeeds@jmason.org  Thu Sep 26 16:43:15 2002
-Return-Path: <rssfeeds@example.com>
-Delivered-To: yyyy@localhost.example.com
-Received: from localhost (jalapeno [127.0.0.1])
-  by jmason.org (Postfix) with ESMTP id E543516F69
-	for <jm@localhost>; Thu, 26 Sep 2002 16:42:08 +0100 (IST)
-Received: from jalapeno [127.0.0.1]
-	by localhost with IMAP (fetchmail-5.9.0)
-	for jm@localhost (single-drop); Thu, 26 Sep 2002 16:42:08 +0100 (IST)
-Received: from dogma.slashnull.org (localhost [127.0.0.1]) by
-    dogma.slashnull.org (8.11.6/8.11.6) with ESMTP id g8QFRgg24226 for
-    <jm@jmason.org>; Thu, 26 Sep 2002 16:27:42 +0100
-Message-Id: <200209261527.g8QFRgg24226@dogma.slashnull.org>
-To: yyyy@example.com
-From: "hyatt@mozilla" <rssfeeds@example.com>
-Subject: Priceless
-Date: Thu, 26 Sep 2002 15:27:41 -0000
-Content-Type: text/plain; encoding=utf-8
-X-Spam-Status: No, hits=0.0 required=5.0
-	tests=AWL
-	version=2.50-cvs
-X-Spam-Level: 
-```
-
-Some of these keys are mandatory such as *Date*, *From*, and *To* (or *In-Reply-To*, or *Bcc*). Other keys are optional but widely used, such as *Subject*, *Cc*, *Received*, and *Message-ID*. Many keys are ignored by the mail system, but the entire header is relayed on to the recipient's server whether or not it is recognized. For example, keys starting with "X-" are for personal application or institution use and are ignored by other applications. The **Received** header lines are important because they allow the message to be tracked. As a message makes its way to the intended recipient, servers add additional Received lines to the header. A value may be continued on a second line of the header, in which case the line will be indented and begin with a tab character or blank spaces.
-
-- **Body**
-
-The body of the email is all the text after the first blank line following the header and up to any attachments. If the message has no attachments, then the body is everything excluding the header. If the message has attachements, we need to fin where they begin to find the body.
-
-- **Attachments**
-
-An Internet standard called MIME, Mulfipurpose Internet Mail Extensions, specifies how messages may be formatted and how to separate the attachments from the message. Information about the MIME encoding is provided through header fields.
-
-Below is an example of a content-type where the top-level is multipart, which indicates there will be several documents in the body of the message. The boundary parameter provides a special character string for delimiting the start and end of the message part.
-```
-Content-Type: multipart/signed; micalg=pgp-sha1;
-    protocol="application/pgp-signature";
-    boundary="wLAMOaPNJ0fu1fTG"
-
-
---wLAMOaPNJ0fu1fTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Aug 28, 2002 at 12:14:24AM +0100, Justin Mason wrote:
-> actually, I think procmail supports this directly. use DROPPRIVS=3Dyes
-> at the top of the /etc/procmailrc.
-
-Hey, look at that!
-
-       DROPPRIVS   If  set  to  `yes'  procmail  will drop all privileges
-		   it might have had (suid or sgid).  This is only
-		   useful if you want to guarantee that the bottom half
-		   of  the /etc/procmailrc file is executed on behalf
-		   of the recipient.
-
-Of course, removing setuid/gid bits on programs that don't need it is
-always a good idea.  A general rule of system administration: don't give
-out permissions unless you absolutely need to.   ;)
-
---=20
-Randomly Generated Tagline:
-"The cardinal rule at our school is simple. No shooting at teachers. If
- you have to shoot a gun, shoot it at a student or an administrator."
-                 - "Word Smart II", from Princeton Review Pub.
-
---wLAMOaPNJ0fu1fTG
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.0.6 (GNU/Linux)
-Comment: For info see http://www.gnupg.org
-
-iD8DBQE9bCkWAuOQUeWAs2MRAr+iAJ9cVLx61vWsC5KFDLYv9/T7FaZmxACgzUpC
-f235rrVr6cI8LvPC+IeIss0=
-=BsCM
------END PGP SIGNATURE-----
-
---wLAMOaPNJ0fu1fTG--
-
-```
+- **isSpam**: *logical* - **whether mail is Spam (TRUE) or Ham (FALSE). You can compute this from the name of the messages in the top-level list of messages.
+- **isRe**: *logical* - **if the string Re: appears as the first word in the subject of the message
+- **numLinesInBody**: *integer* - **a count of the number of lines in the body of the email message
+- **bodyCharacterCount**: *integer* - **the number of characters in the body of the email message
+- **replyUnderline**: *logical* - **whether the Reply-To field in the header has an underline and numbers/letters
+- **subjectExclamationCount**: *integer* - **a count of the number of exclamation marks (!) in the subject of the message
+- **subjectQuestCount**: *integer* - **the number of question marks in the subject
+- **numAttachments**: *integer* - **the number of attachments in the message
+- **priority**: *logical* - **whether the message's header had an X-Priority or X-Msmail-Priority that was set to high
+- **numRecipients**: *integer* - **the number of recipients in the To, Cc fields
+- **percentCapitals**: *numeric* - **the percentage of the characters in the body of the email that are upper case (excluding blanks, numbers, and punctuation)
+- **isInReplyTo**: *logical* - **whether the header of the message has an In-Reply-To field
+- **sortedRecipients**: *logical* - **the recipient list is sorted by address
+- **subjectPunctuationCheck**: *logical* - **whether the subject has punctuation or digits surrounded by characters, e.g. V?agra and pay1ng, but not New!
+- **hourSent**: *integer* - **the hour in the day the mail was sent (0 - 23)
+- **multipartText**: *logical* - **whether the header states that the message is a multipart/text, i.e. with attachments
+- **containsImages**: *logical* - **whether the message contain images (in HTML)
+- **isPGPsigned**: *logical* - **indicates whether the mail was digitally signed (e.g. using PGP or GPG)
+- **percentHTMLTags**: *numeric* - **the proportion of any HTML text in the message's body that is made up of HTML markup and not content
+- **subjectSpamWords**: *logical* - **whether the subject contains one of the following phrases: viagra, pounds, free, weight, guarantee, millions, dollars, credit, risk, prescription, generic, drug, money back, credit card
+- **percentSubjectBlanks**: *numeric* - **the percentage of blanks in the subject
+- **messageIdHasHostname**: *logical* - **whether the message id that uniquely identifies the message has no component identifying the machine from which it was set
+- **fromnumericEnd**: *logical* - **whether the user login in the From: field ends in numbers
+- **isYelling**: *logical* - **whether the Subject of the mail is in capital letters
+- **percentForwards**: *numeric* - **percent of the message's body that is made up of content included from other messages
+- **isOriginalMessage**: *logical* - **body does not contain the phrase ``original message'' or something similar
+- **isDear**: *logical* - **whether the message body contains a form of the introduction Dear
+- **isWrote**: *logical* - **whether the text includes a line indicating an included message as identified by the word wrote: in several different possible languages
+- **averageWordLength**: *numeric* - **the average length of the words in the body of the message
+- **numDollarSigns**: *integer* - **the number of dollar signs in the body of the message
+- **numSpamURLs**: *integer* - **the number of URLs in the message that are "known" to be SPAM URLs. We compute this set of URLs by looking at all of the SPAM messages in our training set and finding all the URLs and removing URLs that are in HAM messages
 
 ## Implement
-- `splitHeader`: seperates the content into the header and abody, and also a starting "From ...." line
-```{r, eval=F}
-splitHeader <- function(txt){
-  # body is all the text after the first blank line following header and up to any attachment
-  isblank <- txt == ""
-  ind <- which(isblank)[1] # index number of the first blank line
-  # check whether there is a "From Line" at the beginning
-  if(grepl("^From ", txt[1])) {
-    fromLine <- txt[1]
-    start <- 2
-  } else {
-    fromLine <- ""
-    start <- 1
-  }
-  list(header = txt[start:(ind - 1)],
-       body = txt[-(1:ind)],
-       fromLine = fromLine)
-}
-
-# splitHeader(txt)
-```
-
-- `makeHeader`: processes the lines in the header into KEY:VALUE pairs, return a named character vector
-```{r, eval=FALSE}
-makeHeader <- function(txt, asVector = TRUE){
-  con <- textConnection(txt)
-  on.exit(close(con))    
-  h <- read.dcf(con, all = TRUE)  # a data frame with one row
-  # turn it into a character vector
-  if (asVector){
-    structure(unlist(h),
-              names = rep(names(h), sapply(h, function(x)
-                                                if(is.list(x))
-                                                   length(x[[1]])
-                                                else
-                                                    1L)))
-  } else {h}
-}
-
-# makeHeader(splitHeader(txt)$header)
-```
-
-
-- `getContentType`: extracts the Content-Type field 
-```{r, eval=FALSE}
-getContentType <- function(header){
-  i <- match("content-type", tolower(names(header)))
-  if (is.na(i)){
-    return(character())
-  } else return(header[[i]])
-}
-
-# getContentType(header)
-```
-
-
-- `getBoundaryMarker`
-```{r, eval=FALSE}
-getBoundaryMarker <- function(ContentType){
-  rx <- "(boundary|BOUNDARY)="
-  els <- strsplit(ContentType, ";[[:space:]]*")[[1]]
-  val <- grep(rx, els, value = TRUE)
-  gsub("(^[\"']|[\"']$)", "", gsub(rx, "",  val))
-}
-
-# getBoundaryMarker(ContentType)
-```
-
-- `splitBody`: split body into body text and attachments (if any)
-```{r, eval=FALSE}
-splitBody <- function(body, header){
-  ct <- getContentType(header)
-  boundary <- getBoundaryMarker(ct)
-  
-  if (length(ct) == 0 || !grepl("boundary", tolower(ct)))
-    return(list(body = body))
- 
-  isStart <- (body %in% c(sprintf("--%s", boundary), sprintf("--%s--", boundary)))
-  
-  if(!any(isStart)) {
-    i <- agrep(paste0("--", boundary), body)
-    if(length(i))
-      isStart[i] <- TRUE
-    else
-      return(list(body = body))
-  }
-  
-  textbody <- character()
-  endMarker <- which(body == sprintf("--%s--", boundary))
-  
-  pieces <- split(body, cumsum(isStart))
-  if(!isStart[1]) {
-    textbody <-  pieces[[1]]
-    pieces <- pieces[-1]
-  }
-  
-  if(length(endMarker)) {
-    textbody <- c(textbody, pieces[[length(pieces)]][-1])
-    pieces <- pieces[ - length(pieces) ]
-  }
-  
-  atts <- lapply(pieces, makeAttachment, boundary)  
-  return(list(body = textbody, attachments = atts))
-}
-
-```
-
-- `makeAttachment`: removes boundary marker, then process the content into the attachment header and body
-```{r, eval=FALSE}
-makeAttachment <- function(pieces, boundary){
-  if(paste0("--", boundary) == pieces[1] || length(agrep(paste0("--", boundary), pieces[1])))
-    pieces = pieces[-1]
-  i <- which(pieces != "")
-  if(length(i) == 0 || i[1] > 1) 
-    return(list(header = character(), body = pieces))
-  
-  parts <- splitHeader(pieces)
-  list(header = makeHeader(parts$header),
-       body = parts$body)
-}
-
-```
-
-- `readMessage`: combined function to read a single message
-```{r, eval=FALSE}
-readMessage <- function(filename){
-  txt <- readLines(filename, warn = FALSE)
-  parts <- splitHeader(txt)
-  header <- makeHeader(parts$header)
-  result <- splitBody(parts$body, header)
-  result$header <- header
-  result
-}
-
-# readMessage("2096.8aecfec50aa2ec00803e8200e0d91399")
-# readMessage("01336.82adb611b4bea7ae97c57911d3152cee")
-```
