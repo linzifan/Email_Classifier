@@ -1,7 +1,7 @@
 ---
-title: "Task 1: Reading Emails"
+title: "Task 2: Creating Variables"
 author: "Zifan Lin"
-date: "March 17, 2015"
+date: "March 19, 2015"
 output: html_document
 ---
 
@@ -182,8 +182,7 @@ getBoundaryMarker <- function(ContentType){
 ```{r, eval=FALSE}
 splitBody <- function(body, header){
   ct <- getContentType(header)
-  if (length(ct) != 0)
-    boundary <- getBoundaryMarker(ct)
+  boundary <- getBoundaryMarker(ct)
   
   if (length(ct) == 0 || !grepl("boundary", tolower(ct)))
     return(list(body = body))
@@ -238,8 +237,6 @@ makeAttachment <- function(pieces, boundary){
 ```{r, eval=FALSE}
 readMessage <- function(filename){
   txt <- readLines(filename, warn = FALSE)
-  if(grepl("^mv ", txt[1]))
-      return(NULL)
   parts <- splitHeader(txt)
   header <- makeHeader(parts$header)
   result <- splitBody(parts$body, header)
@@ -249,50 +246,4 @@ readMessage <- function(filename){
 
 # readMessage("2096.8aecfec50aa2ec00803e8200e0d91399")
 # readMessage("01336.82adb611b4bea7ae97c57911d3152cee")
-```
-
-- Read all data and create a list.
-```{r, eval=FALSE}
-setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/easy_ham")
-filenames <- list.files(getwd())
-train_easy_ham<- vector("list", length(filenames))
-for (i in 1:length(filenames)){
-  train_easy_ham[i] <- list(readMessage(filenames[i]))
-}
-names(train_easy_ham) <- filenames
-
-setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/easy_ham_2")
-filenames <- list.files(getwd())
-train_easy_ham_2<- vector("list", length(filenames))
-for (i in 1:length(filenames)){
-  train_easy_ham_2[i] <- list(readMessage(filenames[i]))
-}
-names(train_easy_ham_2) <- filenames
-
-setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/hard_ham")
-filenames <- list.files(getwd())
-train_hard_ham<- vector("list", length(filenames))
-for (i in 1:length(filenames)){
-  train_hard_ham[i] <- list(readMessage(filenames[i]))
-}
-names(train_hard_ham) <- filenames
-
-setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/spam")
-filenames <- list.files(getwd())
-train_spam<- vector("list", length(filenames))
-for (i in 1:length(filenames)){
-  train_spam[i] <- list(readMessage(filenames[i]))
-}
-names(train_spam) <- filenames
-
-setwd("~/Documents/R practice/Email Classifier/SpamAssassinTraining/spam_2")
-filenames <- list.files(getwd())
-train_spam_2<- vector("list", length(filenames))
-for (i in 1:length(filenames)){
-  train_spam_2[i] <- list(readMessage(filenames[i]))
-}
-names(train_spam_2) <- filenames
-
-training <- c(train_easy_ham, train_easy_ham_2, train_hard_ham, train_spam, train_spam_2)
-
 ```
